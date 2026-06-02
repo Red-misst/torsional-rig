@@ -239,19 +239,19 @@
         document.addEventListener("DOMContentLoaded", async () => {
             const markdown = document.getElementById('markdown-content').textContent;
             
-            // Configure marked to handle mermaid code blocks
-            const renderer = new marked.Renderer();
-            const originalCodeRenderer = renderer.code.bind(renderer);
-            renderer.code = function(code, language) {
-                if (language === 'mermaid') {
-                    return `<div class="mermaid">${code}</div>`;
-                }
-                return originalCodeRenderer(code, language);
-            };
-            marked.setOptions({ renderer });
-            
             // Render markdown to HTML
             document.getElementById('content').innerHTML = marked.parse(markdown);
+            
+            // Convert marked's <pre><code class="language-mermaid"> into <div class="mermaid">
+            document.querySelectorAll('code.language-mermaid').forEach(el => {
+                const pre = el.parentElement;
+                if (pre.tagName === 'PRE') {
+                    const div = document.createElement('div');
+                    div.className = 'mermaid';
+                    div.textContent = el.textContent;
+                    pre.replaceWith(div);
+                }
+            });
             
             // Render mermaid diagrams
             try {
