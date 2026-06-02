@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Torsional Rig - 3D Assembly</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1e1e2f;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 340px;
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.2rem;
+            color: #60a5fa;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #60a5fa;
+            cursor: pointer;
+        }
+        .data-readout {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 0.95rem;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .val-twist { color: #f87171; font-weight: bold; }
+        .val-jitter { color: #4ade80; }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(20, 20, 30, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 380px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        /* Professional CAD Annotation Styles */
+        .annotation {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid #60a5fa;
+            color: #f8fafc;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            pointer-events: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .annotation::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 30px;
+            background: #60a5fa;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-panel">
+        <h2>Torsional Apparatus Schematic</h2>
+        <div class="control-group" style="margin-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 15px;">
+            <button onclick="window.open('readme.html', '_blank')" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; transition: background 0.2s;">
+                View Documentation
+            </button>
+            <label for="toggle-labels" style="justify-content: flex-start; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="toggle-labels" checked style="width: auto; margin-right: 10px; accent-color: #60a5fa; cursor: pointer;">
+                Show CAD Annotations
+            </label>
+        </div>
+        <div class="control-group">
+            <label><span>Excitation Speed (RPM)</span> <span id="rpm-display">0</span></label>
+            <input type="range" id="speed-slider" min="0" max="2500" value="0" step="10">
+        </div>
+        <div class="data-readout">
+            <div class="data-row"><span>System State:</span> <span id="resonance-state" style="color:#94a3b8;">Resting</span></div>
+            <div class="data-row"><span>Twist Deflection:</span> <span class="val-twist" id="twist-disp">0.00°</span></div>
+            <div class="data-row"><span>Ang. Jitter (Δω):</span> <span class="val-jitter" id="jitter-disp">0.00 rad/s</span></div>
+        </div>
+    </div>
+
+    <div id="instructions">
+        <strong style="color: #fff;">Torsional Jitter Simulation:</strong><br>
+        <span style="color: #4ade80; font-weight: bold;">[Active] High-Speed Camera Mode (10x Slow-Mo)</span><br>
+        To bypass 60Hz Nyquist framerate aliasing at high RPMs, the viewport maps time to 0.1x real-time. Telemetry calculations maintain perfect real-time magnitude.<br><br>
+        <div class="dot" style="background: #334155;"></div> Drive Motor (Constant Ω)<br>
+        <div class="dot" style="background: #fbbf24;"></div> Inertial Flywheel Mass<br>
+        <div class="dot" style="background: #ef4444;"></div> High-Res Optical Encoder
+    </div>
+
+    <script>
+        let scene, camera, renderer, labelRenderer, controls;
+        let shaftMesh, massMesh, motorMesh, motorShaftMesh, couplingMesh, encoderCouplingMesh;
+        
+        let motorAngle = 0;
+        let excitationPhase = 0;
+        let clock = new THREE.Clock();
+        
+        // Physics / Simulation variables
+        const CRITICAL_SPEED = 1200; 
+        const MAX_TWIST_RAD = 1.2;   
+        let currentRpm = 0;
+        let currentTwistAmplitude = 0;
+
+        // Mechanics parameters
+        const yCenter = 3.5; 
+        const shaftRadius = 0.2;
+        // Exactly calculated to span between the inner faces of both couplings
+        const shaftLength = 19.25; 
+
+        // UI Elements
+        const slider = document.getElementById('speed-slider');
+        const rpmDisplay = document.getElementById('rpm-display');
+        const twistDispDisplay = document.getElementById('twist-disp');
+        const jitterDispDisplay = document.getElementById('jitter-disp');
+        const stateDisplay = document.getElementById('resonance-state');
+        const labelToggle = document.getElementById('toggle-labels');
+
+        window.onload = function() {
+            initScene();
+            buildRig();
+            setupLights();
+            animate();
+        };
+
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1e1e2f);
+            scene.fog = new THREE.Fog(0x1e1e2f, 20, 100);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(22, 18, 28);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            labelRenderer = new THREE.CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0px';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            container.appendChild(labelRenderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, yCenter, 0);
+
+            window.addEventListener('resize', onWindowResize, false);
+            
+            slider.addEventListener('input', (e) => {
+                currentRpm = parseInt(e.target.value);
+                rpmDisplay.innerText = currentRpm;
+            });
+
+            labelToggle.addEventListener('change', (e) => {
+                if(labelRenderer) {
+                    labelRenderer.domElement.style.display = e.target.checked ? 'block' : 'none';
+                }
+            });
+        }
+
+        function setupLights() {
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 15; dirLight.shadow.camera.bottom = -15;
+            dirLight.shadow.camera.left = -15; dirLight.shadow.camera.right = 15;
+            scene.add(dirLight);
+        }
+
+        function createLabel(text, position) {
+            const div = document.createElement('div');
+            div.className = 'annotation';
+            div.textContent = text;
+            div.style.marginTop = '-45px'; 
+            const label = new THREE.CSS2DObject(div);
+            label.position.copy(position);
+            scene.add(label);
+            return label;
+        }
+
+        function buildRig() {
+            const aluminumMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8, roughness: 0.2 });
+            const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.4 });
+            const brassMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.9, roughness: 0.3 });
+            const redRubberMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.8 });
+            
+            // Hexagonal shaft material to make twisting highly visible
+            const steelMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2, flatShading: true });
+
+            // Base & Rails
+            const baseGeo = new THREE.BoxGeometry(35, 1, 12);
+            const base = new THREE.Mesh(baseGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+            base.position.y = -0.5;
+            base.receiveShadow = true;
+            scene.add(base);
+
+            const railGeo = new THREE.BoxGeometry(30, 0.5, 2);
+            const frontRail = new THREE.Mesh(railGeo, aluminumMat);
+            frontRail.position.set(0, 0.25, 2);
+            scene.add(frontRail);
+            const backRail = new THREE.Mesh(railGeo, aluminumMat);
+            backRail.position.set(0, 0.25, -2);
+            scene.add(backRail);
+
+            function createMountPlate(x, width) {
+                const plate = new THREE.Mesh(new THREE.BoxGeometry(width, 0.2, 6.5), darkMetalMat);
+                plate.position.set(x, 0.6, 0); 
+                plate.castShadow = true;
+                scene.add(plate);
+            }
+
+            // 1. Drive Motor (Left)
+            createMountPlate(-13, 4);
+            const motorGroup = new THREE.Group();
+            motorMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 4, 32), darkMetalMat);
+            motorMesh.rotation.z = Math.PI / 2;
+            motorMesh.position.set(0, 3.5, 0); // Face ends at -11.0 globally
+            motorMesh.castShadow = true;
+            motorGroup.add(motorMesh);
+            
+            const motorBase = new THREE.Mesh(new THREE.BoxGeometry(3, 2.8, 3), darkMetalMat);
+            motorBase.position.set(0, 2.1, 0); 
+            motorGroup.add(motorBase);
+            motorGroup.position.set(-13, 0, 0);
+            scene.add(motorGroup);
+
+            // Motor Input Shaft (Silver, protruding from motor body)
+            motorShaftMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0, 16), steelMat);
+            motorShaftMesh.rotation.z = Math.PI/2;
+            motorShaftMesh.position.set(-10.5, yCenter, 0); // Spans -11.0 to -10.0
+            scene.add(motorShaftMesh);
+
+            createLabel('775 DC Drive Motor', new THREE.Vector3(-13, 6, 0));
+
+            // 2. Flexible Jaw Coupling (Spider Coupling)
+            couplingMesh = new THREE.Group();
+            const coupHalf1 = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.8, 16), aluminumMat);
+            coupHalf1.rotation.z = Math.PI/2;
+            coupHalf1.position.x = -0.6; // Spans -10.5 to -9.7 globally
+            couplingMesh.add(coupHalf1);
+            
+            const spider = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.4, 16), redRubberMat);
+            spider.rotation.z = Math.PI/2; // Spans -9.7 to -9.3 globally
+            couplingMesh.add(spider);
+
+            const coupHalf2 = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.8, 16), aluminumMat);
+            coupHalf2.rotation.z = Math.PI/2;
+            coupHalf2.position.x = 0.6; // Spans -9.3 to -8.5 globally
+            couplingMesh.add(coupHalf2);
+
+            couplingMesh.position.set(-9.5, yCenter, 0);
+            scene.add(couplingMesh);
+            createLabel('Flexible Jaw Coupling', new THREE.Vector3(-9.5, yCenter + 2.5, 2));
+
+            // 3. Bearings
+            createMountPlate(-7, 3);
+            createMountPlate(5, 3);
+            const bearingGeo = new THREE.BoxGeometry(2, 3.5, 2);
+            const bearingL = new THREE.Mesh(bearingGeo, darkMetalMat);
+            bearingL.position.set(-7, 2.45, 0); 
+            scene.add(bearingL);
+            const bearingR = new THREE.Mesh(bearingGeo, darkMetalMat);
+            bearingR.position.set(5, 2.45, 0); 
+            scene.add(bearingR);
+            createLabel('Pillow Block Bearing', new THREE.Vector3(-7, 5, 0));
+
+            // 4. Heavy Inertial Flywheel Mass
+            massMesh = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 1.5, 32), brassMat);
+            massMesh.rotation.z = Math.PI / 2;
+            massMesh.position.set(8, yCenter, 0);
+            massMesh.castShadow = true;
+            scene.add(massMesh);
+            createLabel('Inertial Flywheel Mass', new THREE.Vector3(8, yCenter + 3.5, 0));
+
+            // 5. Optical Encoder (Right)
+            createMountPlate(13.25, 2.5);
+            const encoderStationaryGroup = new THREE.Group();
+            
+            // Stationary Red Housing
+            const encBody = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.5, 32), new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 }));
+            encBody.rotation.z = Math.PI/2;
+            encBody.position.set(13.0, yCenter, 0); // Spans 12.25 to 13.75
+            encBody.castShadow = true;
+            encoderStationaryGroup.add(encBody);
+
+            const encMount = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.8, 2), aluminumMat);
+            encMount.position.set(13.0, 2.1, 0); 
+            encoderStationaryGroup.add(encMount);
+            scene.add(encoderStationaryGroup);
+
+            // Rotating Encoder Components
+            encoderCouplingMesh = new THREE.Group();
+            
+            // Internal encoder input shaft (protruding from housing)
+            const encInputShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.5, 16), aluminumMat);
+            encInputShaft.rotation.z = Math.PI/2;
+            encInputShaft.position.set(12.0, 0, 0); // Spans 11.75 to 12.25
+            encoderCouplingMesh.add(encInputShaft);
+
+            // Rigid collar coupling connecting test shaft to encoder shaft
+            const encCoupling = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.0, 16), darkMetalMat);
+            encCoupling.rotation.z = Math.PI/2;
+            encCoupling.position.set(11.25, 0, 0); // Spans 10.75 to 11.75
+            encoderCouplingMesh.add(encCoupling);
+
+            encoderCouplingMesh.position.set(0, yCenter, 0);
+            scene.add(encoderCouplingMesh);
+
+            createLabel('1024 P/R Optical Encoder', new THREE.Vector3(13.0, yCenter + 2, 2));
+
+            // 6. Flexible Torsional Shaft (Hexagonal for visible twisting)
+            const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLength, 6, 50);
+            shaftGeo.rotateZ(Math.PI / 2); 
+            
+            shaftGeo.userData.originalPositions = new Float32Array(shaftGeo.attributes.position.array);
+            
+            shaftMesh = new THREE.Mesh(shaftGeo, steelMat);
+            // Center positioned exactly between motor coupling face (-8.5) and encoder coupling face (10.75)
+            shaftMesh.position.set(1.125, yCenter, 0); 
+            shaftMesh.castShadow = true;
+            scene.add(shaftMesh);
+            
+            createLabel('Flexible Torsional Shaft', new THREE.Vector3(0, yCenter + 1.5, 0));
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const dt = clock.getDelta();
+            const sim_dt = dt * 0.1; 
+
+            // 1. Torsional Resonance Physics
+            const dampingRatio = 0.04;
+            const ratio = (currentRpm === 0) ? 0 : currentRpm / CRITICAL_SPEED;
+            
+            let targetTwistAmplitude = (currentRpm === 0) ? 0 : 0.05 + (currentRpm / 2500) * 0.1; 
+            
+            if (ratio > 0) {
+                const resonanceFactor = 1.0 / Math.sqrt(Math.pow((1 - ratio * ratio), 2) + Math.pow(2 * dampingRatio * ratio, 2));
+                targetTwistAmplitude += (resonanceFactor * 0.15); 
+            }
+            currentTwistAmplitude = THREE.MathUtils.lerp(currentTwistAmplitude, Math.min(targetTwistAmplitude, MAX_TWIST_RAD), 0.1);
+
+            // 2. Calculate True Kinematics 
+            const trueAngularVelocity = (currentRpm * Math.PI * 2) / 60; 
+            motorAngle = (motorAngle + trueAngularVelocity * sim_dt) % (Math.PI * 2);
+            
+            const excitationFreq = trueAngularVelocity * 4; 
+            excitationPhase = (excitationPhase + excitationFreq * sim_dt) % (Math.PI * 2);
+            
+            const twistPhaseLag = currentTwistAmplitude * Math.sin(excitationPhase);
+            const flywheelAngle = (motorAngle - twistPhaseLag) % (Math.PI * 2);
+
+            // 3. Deform Shaft Geometry (The Twist Effect)
+            const positions = shaftMesh.geometry.attributes.position.array;
+            const originals = shaftMesh.geometry.userData.originalPositions;
+            
+            for(let i=0; i<positions.length; i+=3) {
+                let ox = originals[i];
+                let oy = originals[i+1];
+                let oz = originals[i+2];
+
+                // Map shaft vertex to absolute world coordinates (-8.5 to 10.75)
+                let absoluteX = ox + 1.125;
+                let t = (absoluteX + 8.5) / 19.25; 
+                t = Math.max(0, Math.min(1, t));
+
+                let interpolatedAngle = motorAngle - (twistPhaseLag * t);
+
+                positions[i]   = ox;
+                positions[i+1] = oy * Math.cos(interpolatedAngle) - oz * Math.sin(interpolatedAngle);
+                positions[i+2] = oy * Math.sin(interpolatedAngle) + oz * Math.cos(interpolatedAngle);
+            }
+            
+            shaftMesh.geometry.attributes.position.needsUpdate = true;
+            shaftMesh.geometry.computeVertexNormals(); 
+
+            // 4. Update Rigid Components
+            if (motorMesh) motorMesh.rotation.x = motorAngle;
+            if (motorShaftMesh) motorShaftMesh.rotation.x = motorAngle;
+            if (couplingMesh) couplingMesh.rotation.x = motorAngle;
+            if (massMesh) massMesh.rotation.x = flywheelAngle;
+            if (encoderCouplingMesh) encoderCouplingMesh.rotation.x = flywheelAngle;
+
+            // 5. Update UI Dashboard 
+            const twistDegrees = (twistPhaseLag * (180 / Math.PI)).toFixed(2);
+            const angularJitter = (currentTwistAmplitude * excitationFreq * Math.cos(excitationPhase)).toFixed(2);
+
+            twistDispDisplay.innerText = Math.abs(twistDegrees) + '°';
+            jitterDispDisplay.innerText = angularJitter + ' rad/s';
+
+            if (currentRpm === 0) {
+                stateDisplay.innerText = 'Resting';
+                stateDisplay.style.color = '#94a3b8';
+            } else if (currentRpm > CRITICAL_SPEED - 80 && currentRpm < CRITICAL_SPEED + 80) {
+                stateDisplay.innerText = 'TORSIONAL RESONANCE';
+                stateDisplay.style.color = '#ef4444';
+            } else if (currentRpm >= CRITICAL_SPEED + 80) {
+                stateDisplay.innerText = 'Supercritical (Shear stabilized)';
+                stateDisplay.style.color = '#4ade80';
+            } else {
+                stateDisplay.innerText = 'Subcritical';
+                stateDisplay.style.color = '#facc15';
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>

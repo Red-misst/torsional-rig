@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Digital Torsional Rig</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #e2e8f0;
+            --accent-color: #60a5fa;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px 50px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+        h1, h2, h3, h4 { color: #f8fafc; margin-top: 1.5em; }
+        h1 { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--accent-color); }
+        h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        a { color: var(--accent-color); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        pre { background: #0f172a; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border-color); }
+        code { background: #0f172a; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #38bdf8; }
+        pre code { background: none; padding: 0; color: #e2e8f0; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; margin-bottom: 20px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background: #0f172a; color: #94a3b8; }
+        tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.02); }
+        blockquote { border-left: 4px solid var(--accent-color); margin: 0 0 20px 0; padding: 10px 20px; background: rgba(96, 165, 250, 0.1); border-radius: 0 8px 8px 0; }
+        .mermaid { text-align: center; margin: 30px 0; background: #f8fafc; padding: 20px; border-radius: 8px; overflow-x: auto; }
+        
+        /* Back to Simulation Button */
+        .back-btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+        }
+    </style>
+    
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Mermaid.js for diagrams -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        
+        document.addEventListener("DOMContentLoaded", async () => {
+            const markdown = document.getElementById('markdown-content').textContent;
+            
+            // Configure marked to handle mermaid code blocks
+            const renderer = new marked.Renderer();
+            const originalCodeRenderer = renderer.code.bind(renderer);
+            renderer.code = function(code, language) {
+                if (language === 'mermaid') {
+                    return `<div class="mermaid">${code}</div>`;
+                }
+                return originalCodeRenderer(code, language);
+            };
+            marked.setOptions({ renderer });
+            
+            // Render markdown to HTML
+            document.getElementById('content').innerHTML = marked.parse(markdown);
+            
+            // Render mermaid diagrams
+            try {
+                await mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+            } catch(e) {
+                console.error("Mermaid parsing failed", e);
+            }
+            
+            // Trigger MathJax after DOM is updated
+            if (window.MathJax) {
+                window.MathJax.typesetPromise();
+            }
+        });
+    </script>
+    
+    <!-- MathJax for LaTeX equations -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back to Simulation</a>
+        <div id="content">Loading documentation...</div>
+    </div>
+    
+    <!-- Markdown source embedded directly to avoid CORS issues -->
+    <script type="text/markdown" id="markdown-content">
+# Digital Torsional Rig: High-Frequency Jitter Analysis & Resonance Telemetry
+
+> **Date:** June 2026
+> **Department:** Solid Mechanics Laboratory
+> **Project Level:** Prototype & Educational Apparatus Design
+
+## 1. Executive Summary & Project Objectives
+
+**Objective:** Modernize the solid mechanics lab by capturing continuous, high-frequency torsional vibration ($\Delta\omega$) digitally—replacing outdated manual stroboscopic readings with real-time, precision telemetry.
+
+**Key Engineering Goals:**
+- **Precision Telemetry:** Capture microscopic angular velocity fluctuations using a 1024 P/R optical encoder operating at up to 4,096 counts per revolution.
+- **Overcome Hardware Bottlenecks:** Offload high-frequency pulse counting from the main CPU to dedicated hardware peripherals (ESP32 PCNT) to ensure signal integrity.
+- **Seamless Integration:** Stream pre-processed datasets directly into the existing 1-DOF Resonance Analysis Engine for live Fast Fourier Transform (FFT) processing.
+
+## 2. System Architecture
+
+```mermaid
+graph TD
+    subgraph Mechanical Assembly
+        M[775 DC Motor] -->|Jaw Coupling| S[Flexible Steel Shaft]
+        S -->|Supported by| P[Dual Pillow-Block Bearings]
+        S -->|Torsional Load| F[Inertial Mass / Flywheel]
+        S -->|Zero-Backlash Rigid Coupling| E[Omron E6B2-C 1024 P/R Encoder]
+    end
+    
+    subgraph Electrical & Firmware
+        E -->|Phase A/B 5V| L[4.7 kΩ Pull-ups / Level Shift]
+        L -->|3.3V Logic| ESP[ESP32]
+        ESP -->|Hardware PCNT| PCNT[Pulse Counter]
+    end
+    
+    subgraph Data Pipeline
+        PCNT -->|Buffered Data| W[WebSockets]
+        W --> N[Node.js Server]
+        N -->|Live FFT| UI[1-DOF Resonance Engine]
+    end
+```
+
+## 3. Step-by-Step Build Process
+
+### Step 1: Mechanical Construction
+1. **Chassis Assembly:** Construct the base frame using T-slot 2020 aluminum extrusions. This provides a rigid, zero-flex baseline to isolate external vibrations.
+2. **Drive System Installation:** Mount the 775 DC Motor to the chassis. Connect it to the flexible steel shaft using a flexible jaw (spider) coupling to strictly isolate drive-motor vibrations from the test apparatus.
+3. **Shaft & Bearings:** Support the flexible steel shaft (hexagonal or round, approx. 400–500 mm) using dual pillow-block bearings. This constrains lateral whirling while permitting torsional twist.
+4. **Inertial Mass:** Mount the custom-machined brass flywheel (Ø 100 mm) onto the shaft to induce measurable torsional shear lag and dynamic resonance.
+5. **Measurement Node:** Rigidly mount the Omron E6B2-C optical encoder to the frame. Interface it to the rotating shaft via a zero-backlash rigid coupling.
+
+### Step 2: Electrical Integration
+* **The "Interrupt Trap" Problem:** Standard GPIO interrupts at shaft speeds > 1,200 RPM generate over 40,000 pulses/sec, which would monopolize the CPU and cause WebSocket connection drops.
+* **Solution:** Route Encoder Phase A and B directly to the ESP32’s native Pulse Counter (PCNT) peripheral.
+* **Wiring & Protection:** Use 4.7 kΩ pull-up resistors to safely condition the 5V NPN open-collector encoder lines to the 3.3V ESP32 logic levels, preventing pin damage.
+
+### Step 3: Firmware & Data Pipeline
+
+```mermaid
+sequenceDiagram
+    participant Enc as Optical Encoder
+    participant PCNT as ESP32 PCNT
+    participant ISR as 5ms Timer Interrupt
+    participant Mem as Buffer Array
+    participant WS as WebSocket Client
+    
+    Enc->>PCNT: Hardware Quadrature (4096 C/R)
+    Note over Enc, PCNT: 0 CPU Cycles Consumed
+    loop Every 5ms
+        ISR->>PCNT: Read ΔC (Count)
+        ISR->>ISR: Calculate ω_inst (Instant. Vel.)
+        ISR->>ISR: Isolate Torsional Jitter (Δω)
+        ISR->>Mem: Push Data Point
+    end
+    loop Every 100ms
+        Mem->>WS: Bulk Transfer (20 samples)
+        Note right of WS: Prevents network jitter
+    end
+```
+
+**Data Mathematics:**
+1. **Instantaneous Angular Velocity:** $\omega_{inst} = \frac{\Delta C}{4096 \times (\Delta t \times 10^{-6})}$ [rev/s]
+2. **Torsional Jitter Isolation:** Subtract rolling mean speed to remove DC motor component: $\Delta\omega = \omega_{inst} - \omega_{mean}$
+
+## 4. Interactive 3D Visualization
+
+The project includes an `index.html` digital twin developed using WebGL to simulate the kinematics of torsional resonance.
+- **Live Torsional Twist:** Real-time $\Delta\omega$ visualization as the shaft mathematically deforms under load.
+- **10x High-Speed Camera Mode:** Time-scaling bypasses monitor Nyquist refresh-rate limits, clearly showing high-RPM phase lag and shear waves.
+- **Accurate Clearances:** Demonstrates physical isolation between the spinning test shaft and the stationary encoder housing.
+
+## 5. Software Integration & Lab Applications
+
+Streaming clean $\Delta\omega$ arrays directly to the 1-DOF Resonance Engine unlocks:
+- **Live FFT Analysis:** Real-time Fast Fourier Transforms to identify dominant torsional vibration frequencies.
+- **Damping Coefficient Calculation:** Calculate structural damping ratios via logarithmic decrement formulas using the perfectly resolved time-domain decay waveform.
+- **Automated Reporting:** Generate AI-assisted lab reports directly from live hardware data arrays, eliminating manual transcription.
+
+## 6. Bill of Materials & Budgeting (Locally Sourced - Kenya)
+
+Designed for lean, local sourcing to undercut commercial rigs (KES 200,000+).
+
+| Component | Description | Est. Cost (KES) |
+| :--- | :--- | :--- |
+| **Microcontroller** | ESP32 Development Board | 1,200 |
+| **Optical Encoder** | Omron E6B2-CWB6C 1024 P/R | 5,500 |
+| **Mechanics** | Flexible shaft & pillow-block bearings | 1,800 |
+| **Inertial Mass** | Custom-machined brass/steel flywheel | 1,800 |
+| **Drive System** | 775 DC motor + jaw coupling | 1,800 |
+| **Frame** | 2020 Aluminum extrusions | 2,000 |
+| **Electronics** | Resistors, shielded cables, proto-board | 300 |
+| **TOTAL** | **Estimated Prototype Cost** | **≈ KES 14,400** |
+    </script>
+</body>
+</html>
