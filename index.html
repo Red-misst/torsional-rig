@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Torsional Rig - 3D Assembly</title>
+    <title>Digital Torsional Rig - Realistic Assembly</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #1e1e2f;
+            background-color: #0f172a;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #fff;
         }
@@ -23,20 +23,22 @@
             top: 20px;
             right: 20px;
             width: 340px;
-            background: rgba(20, 20, 30, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
             z-index: 10;
         }
         h2 {
             margin: 0 0 15px 0;
             font-size: 1.2rem;
-            color: #60a5fa;
+            color: #38bdf8;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .control-group {
             margin-bottom: 20px;
@@ -47,61 +49,61 @@
             font-size: 0.9rem;
             margin-bottom: 8px;
             color: #cbd5e1;
+            font-weight: 600;
         }
         input[type="range"] {
             width: 100%;
-            accent-color: #60a5fa;
+            accent-color: #38bdf8;
             cursor: pointer;
+            height: 6px;
+            border-radius: 3px;
         }
         .data-readout {
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 8px;
             padding: 12px;
             margin-top: 15px;
-            font-family: monospace;
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.95rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .data-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .val-twist { color: #f87171; font-weight: bold; }
-        .val-jitter { color: #4ade80; }
+        .val-jitter { color: #4ade80; text-shadow: 0 0 5px rgba(74, 222, 128, 0.4); }
         
         #instructions {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            background: rgba(20, 20, 30, 0.85);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
             padding: 15px;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             max-width: 380px;
             font-size: 0.85rem;
-            line-height: 1.5;
+            line-height: 1.6;
             color: #94a3b8;
             pointer-events: none;
-        }
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         
-        /* Professional CAD Annotation Styles */
         .annotation {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid #60a5fa;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px solid #38bdf8;
             color: #f8fafc;
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 4px;
             font-size: 0.75rem;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 600;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             pointer-events: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             white-space: nowrap;
@@ -113,8 +115,33 @@
             left: 50%;
             transform: translateX(-50%);
             width: 1px;
-            height: 30px;
-            background: #60a5fa;
+            height: 35px;
+            background: linear-gradient(to bottom, #38bdf8, transparent);
+        }
+
+        /* UI Toggle Button Styles */
+        #global-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #94a3b8;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        #global-toggle:hover {
+            color: #fff;
+            border-color: #38bdf8;
+            background: rgba(30, 41, 59, 0.9);
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -124,16 +151,18 @@
 <body>
 
     <div id="canvas-container"></div>
+    
+    <button id="global-toggle">👁 Toggle UI (Press 'H')</button>
 
     <div id="ui-panel">
-        <h2>Torsional Apparatus Schematic</h2>
+        <h2>Torsional Apparatus</h2>
         <div class="control-group" style="margin-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 15px;">
-            <button onclick="window.open('readme.html', '_blank')" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; transition: background 0.2s;">
+            <button onclick="window.open('readme.html', '_blank')" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #38bdf8; color: #0f172a; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; transition: background 0.2s;">
                 View Documentation
             </button>
             <label for="toggle-labels" style="justify-content: flex-start; align-items: center; cursor: pointer;">
-                <input type="checkbox" id="toggle-labels" checked style="width: auto; margin-right: 10px; accent-color: #60a5fa; cursor: pointer;">
-                Show CAD Annotations
+                <input type="checkbox" id="toggle-labels" checked style="width: auto; margin-right: 10px;">
+                Show Engineering Labels
             </label>
         </div>
         <div class="control-group">
@@ -148,17 +177,14 @@
     </div>
 
     <div id="instructions">
-        <strong style="color: #fff;">Torsional Jitter Simulation:</strong><br>
-        <span style="color: #4ade80; font-weight: bold;">[Active] High-Speed Camera Mode (10x Slow-Mo)</span><br>
-        To bypass 60Hz Nyquist framerate aliasing at high RPMs, the viewport maps time to 0.1x real-time. Telemetry calculations maintain perfect real-time magnitude.<br><br>
-        <div class="dot" style="background: #334155;"></div> Drive Motor (Constant Ω)<br>
-        <div class="dot" style="background: #fbbf24;"></div> Inertial Flywheel Mass<br>
-        <div class="dot" style="background: #ef4444;"></div> High-Res Optical Encoder
+        <strong style="color: #fff; font-size: 1rem;">Torsional Jitter Simulation</strong><br>
+        <span style="color: #38bdf8; font-weight: bold;">[Active] High-Fidelity Rendering Mode</span><br><br>
+        Features physically based rendering (PBR) materials, generated environment mapping, and 10x Slow-Motion temporal scaling to bypass 60Hz Nyquist framerate aliasing at high RPMs.
     </div>
 
     <script>
         let scene, camera, renderer, labelRenderer, controls;
-        let shaftMesh, massMesh, motorMesh, motorShaftMesh, couplingMesh, encoderCouplingMesh;
+        let shaftMesh, massMesh, motorMesh, couplingMesh, encoderCouplingMesh;
         
         let motorAngle = 0;
         let excitationPhase = 0;
@@ -173,7 +199,6 @@
         // Mechanics parameters
         const yCenter = 3.5; 
         const shaftRadius = 0.2;
-        // Exactly calculated to span between the inner faces of both couplings
         const shaftLength = 19.25; 
 
         // UI Elements
@@ -194,17 +219,24 @@
         function initScene() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1e1e2f);
-            scene.fog = new THREE.Fog(0x1e1e2f, 20, 100);
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(22, 18, 28);
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(22, 16, 32);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
             container.appendChild(renderer.domElement);
+
+            // Procedural Environment Map for Realistic Metal Reflections
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            pmremGenerator.compileEquirectangularShader();
+            scene.environment = generateProceduralEnvMap(pmremGenerator);
 
             labelRenderer = new THREE.CSS2DRenderer();
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -217,6 +249,7 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.target.set(0, yCenter, 0);
+            controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
 
             window.addEventListener('resize', onWindowResize, false);
             
@@ -226,27 +259,93 @@
             });
 
             labelToggle.addEventListener('change', (e) => {
-                if(labelRenderer) {
+                if(labelRenderer && uiVisible) {
                     labelRenderer.domElement.style.display = e.target.checked ? 'block' : 'none';
+                }
+            });
+
+            // Global UI Toggle Logic
+            let uiVisible = true;
+            function toggleUI() {
+                uiVisible = !uiVisible;
+                const panel = document.getElementById('ui-panel');
+                const instructions = document.getElementById('instructions');
+                
+                if (uiVisible) {
+                    panel.style.display = 'block';
+                    instructions.style.display = 'block';
+                    if (labelToggle.checked && labelRenderer) {
+                        labelRenderer.domElement.style.display = 'block';
+                    }
+                } else {
+                    panel.style.display = 'none';
+                    instructions.style.display = 'none';
+                    if (labelRenderer) {
+                        labelRenderer.domElement.style.display = 'none';
+                    }
+                }
+            }
+
+            document.getElementById('global-toggle').addEventListener('click', toggleUI);
+            window.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'h') {
+                    toggleUI();
                 }
             });
         }
 
+        // Generates a studio-like reflection map for the metals
+        function generateProceduralEnvMap(pmrem) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const grd = ctx.createLinearGradient(0, 0, 0, 256);
+            grd.addColorStop(0, '#1e293b');
+            grd.addColorStop(0.4, '#e2e8f0');
+            grd.addColorStop(0.5, '#ffffff'); // Horizon
+            grd.addColorStop(0.6, '#475569');
+            grd.addColorStop(1, '#0f172a');
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, 512, 256);
+
+            // Studio light boxes
+            ctx.fillStyle = '#ffffff';
+            ctx.filter = 'blur(10px)';
+            ctx.fillRect(100, 50, 100, 50);
+            ctx.fillRect(300, 50, 100, 50);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            const envMap = pmrem.fromEquirectangular(texture).texture;
+            texture.dispose();
+            return envMap;
+        }
+
         function setupLights() {
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(10, 20, 10);
-            dirLight.castShadow = true;
-            dirLight.shadow.camera.top = 15; dirLight.shadow.camera.bottom = -15;
-            dirLight.shadow.camera.left = -15; dirLight.shadow.camera.right = 15;
-            scene.add(dirLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+            
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            mainLight.position.set(15, 25, 15);
+            mainLight.castShadow = true;
+            mainLight.shadow.camera.top = 20; mainLight.shadow.camera.bottom = -20;
+            mainLight.shadow.camera.left = -20; mainLight.shadow.camera.right = 20;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            mainLight.shadow.bias = -0.0005;
+            scene.add(mainLight);
+
+            const fillLight = new THREE.DirectionalLight(0xbae6fd, 0.5);
+            fillLight.position.set(-15, 10, -15);
+            scene.add(fillLight);
         }
 
         function createLabel(text, position) {
             const div = document.createElement('div');
             div.className = 'annotation';
             div.textContent = text;
-            div.style.marginTop = '-45px'; 
+            div.style.marginTop = '-50px'; 
             const label = new THREE.CSS2DObject(div);
             label.position.copy(position);
             scene.add(label);
@@ -254,144 +353,372 @@
         }
 
         function buildRig() {
-            const aluminumMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8, roughness: 0.2 });
-            const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.4 });
-            const brassMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.9, roughness: 0.3 });
-            const redRubberMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.8 });
-            
-            // Hexagonal shaft material to make twisting highly visible
-            const steelMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2, flatShading: true });
+            // Realistic PBR Materials
+            const brushedAluMat = new THREE.MeshPhysicalMaterial({ color: 0xd1d5db, metalness: 0.8, roughness: 0.4, clearcoat: 0.1 });
+            const polishedSteelMat = new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, metalness: 1.0, roughness: 0.15, clearcoat: 0.8 });
+            const darkCoatedMetal = new THREE.MeshPhysicalMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.7 });
+            const castIronMat = new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.6 });
+            const brassMat = new THREE.MeshPhysicalMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.25, clearcoat: 0.5 });
+            const elastomerMat = new THREE.MeshPhysicalMaterial({ color: 0xef4444, metalness: 0.1, roughness: 0.7, clearcoat: 0.1 });
+            const tableMat = new THREE.MeshPhysicalMaterial({ color: 0x020617, roughness: 0.9, metalness: 0.1 });
+            const copperMat = new THREE.MeshPhysicalMaterial({ color: 0xb87333, metalness: 0.85, roughness: 0.4, clearcoat: 0.3 });
 
-            // Base & Rails
-            const baseGeo = new THREE.BoxGeometry(35, 1, 12);
-            const base = new THREE.Mesh(baseGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a }));
-            base.position.y = -0.5;
+            // Hexagonal steel material specifically for the shaft to catch highlights
+            const flexSteelMat = new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.3, flatShading: true });
+
+            // Utility to add bolts
+            function createBolt(x, y, z) {
+                const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2, 6), polishedSteelMat);
+                bolt.position.set(x, y, z);
+                bolt.castShadow = true;
+                scene.add(bolt);
+                return bolt;
+            }
+
+            // 0. Base Table
+            const baseGeo = new THREE.BoxGeometry(40, 2, 14);
+            const base = new THREE.Mesh(baseGeo, tableMat);
+            base.position.y = -1;
             base.receiveShadow = true;
             scene.add(base);
 
-            const railGeo = new THREE.BoxGeometry(30, 0.5, 2);
-            const frontRail = new THREE.Mesh(railGeo, aluminumMat);
-            frontRail.position.set(0, 0.25, 2);
-            scene.add(frontRail);
-            const backRail = new THREE.Mesh(railGeo, aluminumMat);
-            backRail.position.set(0, 0.25, -2);
-            scene.add(backRail);
-
-            function createMountPlate(x, width) {
-                const plate = new THREE.Mesh(new THREE.BoxGeometry(width, 0.2, 6.5), darkMetalMat);
-                plate.position.set(x, 0.6, 0); 
-                plate.castShadow = true;
-                scene.add(plate);
+            // Extrusion helper
+            function createExtrusion(x, z, length) {
+                const rail = new THREE.Mesh(new THREE.BoxGeometry(length, 0.8, 2), brushedAluMat);
+                rail.position.set(x, 0.4, z);
+                rail.receiveShadow = true;
+                rail.castShadow = true;
+                
+                // Black T-slot grooves
+                const grooveGeo = new THREE.BoxGeometry(length + 0.02, 0.2, 0.2);
+                const grooveMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                const grooveTop = new THREE.Mesh(grooveGeo, grooveMat);
+                grooveTop.position.set(x, 0.8, z);
+                const grooveSide1 = new THREE.Mesh(grooveGeo, grooveMat);
+                grooveSide1.position.set(x, 0.4, z + 1);
+                const grooveSide2 = new THREE.Mesh(grooveGeo, grooveMat);
+                grooveSide2.position.set(x, 0.4, z - 1);
+                
+                scene.add(rail);
+                scene.add(grooveTop);
+                scene.add(grooveSide1);
+                scene.add(grooveSide2);
             }
 
-            // 1. Drive Motor (Left)
-            createMountPlate(-13, 4);
+            createExtrusion(0, 2.5, 34);
+            createExtrusion(0, -2.5, 34);
+
+            function createMountPlate(x, width, depth) {
+                const plate = new THREE.Mesh(new THREE.BoxGeometry(width, 0.4, depth), castIronMat);
+                plate.position.set(x, 1.0, 0); 
+                plate.receiveShadow = true;
+                plate.castShadow = true;
+                scene.add(plate);
+                // Bolts in corners
+                createBolt(x - width/2 + 0.4, 1.2, depth/2 - 0.4);
+                createBolt(x + width/2 - 0.4, 1.2, depth/2 - 0.4);
+                createBolt(x - width/2 + 0.4, 1.2, -depth/2 + 0.4);
+                createBolt(x + width/2 - 0.4, 1.2, -depth/2 + 0.4);
+            }
+
+            // 1. Highly Detailed 775 Drive Motor
+            createMountPlate(-13, 4.5, 8);
             const motorGroup = new THREE.Group();
-            motorMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 4, 32), darkMetalMat);
-            motorMesh.rotation.z = Math.PI / 2;
-            motorMesh.position.set(0, 3.5, 0); // Face ends at -11.0 globally
-            motorMesh.castShadow = true;
-            motorGroup.add(motorMesh);
             
-            const motorBase = new THREE.Mesh(new THREE.BoxGeometry(3, 2.8, 3), darkMetalMat);
-            motorBase.position.set(0, 2.1, 0); 
-            motorGroup.add(motorBase);
+            // L-Bracket Mount (Sheet Metal Style)
+            const bracketBase = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.4, 3.5), brushedAluMat);
+            bracketBase.position.set(0, 1.4, 0); // Anchored to mount plate
+            bracketBase.castShadow = true;
+            motorGroup.add(bracketBase);
+
+            const bracketFace = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.8, 3.5), brushedAluMat);
+            bracketFace.position.set(1.95, 2.6, 0); // Front face holding the motor
+            bracketFace.castShadow = true;
+            motorGroup.add(bracketFace);
+
+            // Main steel body
+            const mBody = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 4.5, 32), polishedSteelMat);
+            mBody.rotation.z = Math.PI / 2;
+            mBody.position.set(0, yCenter, 0);
+            mBody.castShadow = true;
+            motorGroup.add(mBody);
+            
+            // Flux ring (dark center band)
+            const mRing = new THREE.Mesh(new THREE.CylinderGeometry(1.63, 1.63, 2.5, 32), darkCoatedMetal);
+            mRing.rotation.z = Math.PI / 2;
+            mRing.position.set(0, yCenter, 0);
+            motorGroup.add(mRing);
+
+            // Ventilation Slots & Internal Copper Coils
+            const ventMat = new THREE.MeshBasicMaterial({color: 0x050505});
+            for(let i=0; i<4; i++) {
+                const angle = (Math.PI / 2) * i + Math.PI/4;
+                
+                // Front Vents
+                const frontVent = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 1.2), ventMat);
+                frontVent.position.set(1.4, yCenter + Math.sin(angle)*1.45, Math.cos(angle)*1.45);
+                frontVent.rotation.x = angle;
+                motorGroup.add(frontVent);
+                
+                // Visible copper coil through front vent
+                const coilF = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.9), copperMat);
+                coilF.position.set(1.4, yCenter + Math.sin(angle)*1.35, Math.cos(angle)*1.35);
+                coilF.rotation.x = angle;
+                motorGroup.add(coilF);
+
+                // Rear Vents
+                const rearVent = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 1.2), ventMat);
+                rearVent.position.set(-1.4, yCenter + Math.sin(angle)*1.45, Math.cos(angle)*1.45);
+                rearVent.rotation.x = angle;
+                motorGroup.add(rearVent);
+                
+                // Visible copper coil through rear vent
+                const coilR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.9), copperMat);
+                coilR.position.set(-1.4, yCenter + Math.sin(angle)*1.35, Math.cos(angle)*1.35);
+                coilR.rotation.x = angle;
+                motorGroup.add(coilR);
+            }
+
+            // Front plate (pressed against bracket)
+            const mFront = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.55, 0.2, 32), castIronMat);
+            mFront.rotation.z = Math.PI / 2;
+            mFront.position.set(2.35, yCenter, 0);
+            motorGroup.add(mFront);
+            
+            // Front bearing boss
+            const mBoss = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.3, 32), polishedSteelMat);
+            mBoss.rotation.z = Math.PI / 2;
+            mBoss.position.set(2.6, yCenter, 0);
+            motorGroup.add(mBoss);
+
+            // Rear Cap (Bakelite Plastic)
+            const mRear = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.55, 0.4, 32), darkCoatedMetal);
+            mRear.rotation.z = Math.PI / 2;
+            mRear.position.set(-2.45, yCenter, 0);
+            motorGroup.add(mRear);
+
+            // Rear Electrical Terminals (Brass)
+            const term1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.15), brassMat);
+            term1.position.set(-2.8, yCenter + 0.9, 0);
+            motorGroup.add(term1);
+            
+            const term2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.15), brassMat);
+            term2.position.set(-2.8, yCenter - 0.9, 0);
+            motorGroup.add(term2);
+
             motorGroup.position.set(-13, 0, 0);
             scene.add(motorGroup);
 
-            // Motor Input Shaft (Silver, protruding from motor body)
-            motorShaftMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0, 16), steelMat);
+            // Motor Input Shaft (Extends from the bearing boss into the jaw coupling)
+            motorShaftMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.2, 16), polishedSteelMat);
             motorShaftMesh.rotation.z = Math.PI/2;
-            motorShaftMesh.position.set(-10.5, yCenter, 0); // Spans -11.0 to -10.0
+            motorShaftMesh.position.set(-10.0, yCenter, 0); 
             scene.add(motorShaftMesh);
 
-            createLabel('775 DC Drive Motor', new THREE.Vector3(-13, 6, 0));
+            createLabel('775 DC Motor', new THREE.Vector3(-13, 6, 0));
 
-            // 2. Flexible Jaw Coupling (Spider Coupling)
+            // 2. Realistic Jaw Coupling
             couplingMesh = new THREE.Group();
-            const coupHalf1 = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.8, 16), aluminumMat);
-            coupHalf1.rotation.z = Math.PI/2;
-            coupHalf1.position.x = -0.6; // Spans -10.5 to -9.7 globally
-            couplingMesh.add(coupHalf1);
             
-            const spider = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.4, 16), redRubberMat);
-            spider.rotation.z = Math.PI/2; // Spans -9.7 to -9.3 globally
-            couplingMesh.add(spider);
+            // Helper to build a detailed half-coupling
+            function buildCouplingHalf() {
+                const half = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.7, 32), brushedAluMat);
+                base.rotation.z = Math.PI/2;
+                half.add(base);
+                // Two interlocking jaws
+                const jaw1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.6), brushedAluMat);
+                jaw1.position.set(0.6, 0.4, 0);
+                half.add(jaw1);
+                const jaw2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.6), brushedAluMat);
+                jaw2.position.set(0.6, -0.4, 0);
+                half.add(jaw2);
+                // Set screw
+                const setScrew = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 16), darkCoatedMetal);
+                setScrew.position.set(0, 0.9, 0);
+                half.add(setScrew);
+                return half;
+            }
 
-            const coupHalf2 = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.8, 16), aluminumMat);
-            coupHalf2.rotation.z = Math.PI/2;
-            coupHalf2.position.x = 0.6; // Spans -9.3 to -8.5 globally
+            const coupHalf1 = buildCouplingHalf();
+            coupHalf1.position.x = -0.7; // faces right
+            couplingMesh.add(coupHalf1);
+
+            const coupHalf2 = buildCouplingHalf();
+            coupHalf2.rotation.x = Math.PI/2; // offset 90 degrees to interlock
+            coupHalf2.rotation.y = Math.PI; // faces left
+            coupHalf2.position.x = 0.7;
             couplingMesh.add(coupHalf2);
 
-            couplingMesh.position.set(-9.5, yCenter, 0);
+            // Elastomer Spider
+            const spider = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.5, 16), elastomerMat);
+            spider.rotation.z = Math.PI/2;
+            couplingMesh.add(spider);
+
+            couplingMesh.position.set(-9.1, yCenter, 0); // -9.8 to -8.4
             scene.add(couplingMesh);
-            createLabel('Flexible Jaw Coupling', new THREE.Vector3(-9.5, yCenter + 2.5, 2));
+            createLabel('Elastomer Jaw Coupling', new THREE.Vector3(-9.1, yCenter + 2.5, 2));
 
-            // 3. Bearings
-            createMountPlate(-7, 3);
-            createMountPlate(5, 3);
-            const bearingGeo = new THREE.BoxGeometry(2, 3.5, 2);
-            const bearingL = new THREE.Mesh(bearingGeo, darkMetalMat);
-            bearingL.position.set(-7, 2.45, 0); 
-            scene.add(bearingL);
-            const bearingR = new THREE.Mesh(bearingGeo, darkMetalMat);
-            bearingR.position.set(5, 2.45, 0); 
-            scene.add(bearingR);
-            createLabel('Pillow Block Bearing', new THREE.Vector3(-7, 5, 0));
+            // 3. Detailed Pillow Block Bearings (UCP Industrial Style)
+            createMountPlate(-6.5, 3.5, 7);
+            createMountPlate(6.5, 3.5, 7);
 
-            // 4. Heavy Inertial Flywheel Mass
-            massMesh = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 1.5, 32), brassMat);
-            massMesh.rotation.z = Math.PI / 2;
-            massMesh.position.set(8, yCenter, 0);
-            massMesh.castShadow = true;
-            scene.add(massMesh);
-            createLabel('Inertial Flywheel Mass', new THREE.Vector3(8, yCenter + 3.5, 0));
+            function buildPillowBlock(xPos) {
+                const blockGrp = new THREE.Group();
+                
+                // Base Plate
+                const pbBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 5), castIronMat);
+                pbBase.position.set(0, 1.5, 0); // Sits perfectly flush on mount plate
+                pbBase.castShadow = true;
+                blockGrp.add(pbBase);
+                
+                // Upright Support Body
+                const pbBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.8, 2.6), castIronMat);
+                pbBody.position.set(0, 2.5, 0);
+                pbBody.castShadow = true;
+                blockGrp.add(pbBody);
 
-            // 5. Optical Encoder (Right)
-            createMountPlate(13.25, 2.5);
+                // Main Circular Housing Arch
+                const pbArch = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 1.5, 32), castIronMat);
+                pbArch.rotation.z = Math.PI/2;
+                pbArch.position.set(0, yCenter, 0);
+                pbArch.castShadow = true;
+                blockGrp.add(pbArch);
+
+                // Grease Zerk Fitting (Top)
+                const zerk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.3, 8), polishedSteelMat);
+                zerk.position.set(0, yCenter + 1.65, 0);
+                blockGrp.add(zerk);
+
+                // Outer Bearing Seal / Insert Shield (Dark)
+                const pbSeal = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 1.55, 32), darkCoatedMetal);
+                pbSeal.rotation.z = Math.PI/2;
+                pbSeal.position.set(0, yCenter, 0);
+                blockGrp.add(pbSeal);
+
+                // Extended Inner Bearing Race (Polished Steel)
+                const pbRace = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2.0, 32), polishedSteelMat);
+                pbRace.rotation.z = Math.PI/2;
+                pbRace.position.set(0, yCenter, 0);
+                blockGrp.add(pbRace);
+
+                // Set Screws on Inner Race Collar
+                const screw1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 8), darkCoatedMetal);
+                screw1.position.set(0.8, yCenter + 0.35, 0); 
+                blockGrp.add(screw1);
+                
+                const screw2 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 8), darkCoatedMetal);
+                screw2.position.set(0.8, yCenter, 0.35);
+                screw2.rotation.x = Math.PI/2;
+                blockGrp.add(screw2);
+
+                // Inner Bore Hole (Dark Gap around shaft)
+                const pbHole = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 2.05, 16), new THREE.MeshBasicMaterial({color: 0x000000}));
+                pbHole.rotation.z = Math.PI/2;
+                pbHole.position.set(0, yCenter, 0);
+                blockGrp.add(pbHole);
+
+                blockGrp.position.set(xPos, 0, 0);
+                scene.add(blockGrp);
+            }
+
+            buildPillowBlock(-6.5);
+            buildPillowBlock(6.5);
+            createLabel('Pillow Block Bearing', new THREE.Vector3(-6.5, yCenter + 3, 0));
+
+            // 4. Inertial Flywheel with Hub
+            const flywheelGrp = new THREE.Group();
+            
+            // Main Disk
+            const massMain = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 2.8, 1.2, 64), brassMat);
+            massMain.rotation.z = Math.PI / 2;
+            massMain.castShadow = true;
+            flywheelGrp.add(massMain);
+
+            // Hub
+            const massHub = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 2.2, 32), brushedAluMat);
+            massHub.rotation.z = Math.PI / 2;
+            flywheelGrp.add(massHub);
+
+            // Set Screws in Hub
+            const setScrew1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 16), darkCoatedMetal);
+            setScrew1.position.set(0.8, 0.9, 0);
+            flywheelGrp.add(setScrew1);
+
+            flywheelGrp.position.set(9, yCenter, 0);
+            scene.add(flywheelGrp);
+            massMesh = flywheelGrp; // assign to global for animation
+            createLabel('Inertial Flywheel (Brass)', new THREE.Vector3(9, yCenter + 4.5, 0));
+
+            // 5. High-Fidelity Optical Encoder
+            createMountPlate(14, 3, 6);
             const encoderStationaryGroup = new THREE.Group();
             
-            // Stationary Red Housing
-            const encBody = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.5, 32), new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 }));
+            // Main Body (Silver/Black styling)
+            const encBody = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 1.4, 32), brushedAluMat);
             encBody.rotation.z = Math.PI/2;
-            encBody.position.set(13.0, yCenter, 0); // Spans 12.25 to 13.75
+            encBody.position.set(14.2, yCenter, 0); 
             encBody.castShadow = true;
             encoderStationaryGroup.add(encBody);
 
-            const encMount = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.8, 2), aluminumMat);
-            encMount.position.set(13.0, 2.1, 0); 
-            encoderStationaryGroup.add(encMount);
+            const encCap = new THREE.Mesh(new THREE.CylinderGeometry(1.12, 1.12, 0.3, 32), darkCoatedMetal);
+            encCap.rotation.z = Math.PI/2;
+            encCap.position.set(15.0, yCenter, 0); 
+            encoderStationaryGroup.add(encCap);
+
+            // L-Bracket Mount
+            const encMountVert = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.6, 2.2), brushedAluMat);
+            encMountVert.position.set(13.7, 2.5, 0); 
+            encMountVert.castShadow = true;
+            encoderStationaryGroup.add(encMountVert);
+
+            // Cable exiting back
+            const cableCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(15.2, yCenter, 0),
+                new THREE.Vector3(15.8, yCenter, 0),
+                new THREE.Vector3(16.0, 2.0, 0),
+                new THREE.Vector3(16.5, 1.3, 1.0)
+            ]);
+            const cableGeo = new THREE.TubeGeometry(cableCurve, 20, 0.15, 8, false);
+            const cableMat = new THREE.MeshPhysicalMaterial({color: 0x111111, roughness: 0.8});
+            const cable = new THREE.Mesh(cableGeo, cableMat);
+            cable.castShadow = true;
+            encoderStationaryGroup.add(cable);
+
             scene.add(encoderStationaryGroup);
 
-            // Rotating Encoder Components
+            // Rotating Encoder Coupling
             encoderCouplingMesh = new THREE.Group();
             
-            // Internal encoder input shaft (protruding from housing)
-            const encInputShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.5, 16), aluminumMat);
+            const encInputShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8, 16), polishedSteelMat);
             encInputShaft.rotation.z = Math.PI/2;
-            encInputShaft.position.set(12.0, 0, 0); // Spans 11.75 to 12.25
+            encInputShaft.position.set(13.1, 0, 0); // 12.7 to 13.5
             encoderCouplingMesh.add(encInputShaft);
 
-            // Rigid collar coupling connecting test shaft to encoder shaft
-            const encCoupling = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.0, 16), darkMetalMat);
+            const encCoupling = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 32), brushedAluMat);
             encCoupling.rotation.z = Math.PI/2;
-            encCoupling.position.set(11.25, 0, 0); // Spans 10.75 to 11.75
+            encCoupling.position.set(12.1, 0, 0); // 11.5 to 12.7
+            
+            // Add slit to coupling to look realistic
+            const slit = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.1, 0.1), new THREE.MeshBasicMaterial({color:0x000000}));
+            slit.position.set(12.1, 0, 0);
             encoderCouplingMesh.add(encCoupling);
+            encoderCouplingMesh.add(slit);
 
             encoderCouplingMesh.position.set(0, yCenter, 0);
             scene.add(encoderCouplingMesh);
 
-            createLabel('1024 P/R Optical Encoder', new THREE.Vector3(13.0, yCenter + 2, 2));
+            createLabel('1024 P/R Optical Encoder', new THREE.Vector3(14.2, yCenter + 2.5, 2));
 
-            // 6. Flexible Torsional Shaft (Hexagonal for visible twisting)
-            const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLength, 6, 50);
+            // 6. Flexible Torsional Shaft (Hexagonal, visually deforms)
+            const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLength, 6, 60);
             shaftGeo.rotateZ(Math.PI / 2); 
             
             shaftGeo.userData.originalPositions = new Float32Array(shaftGeo.attributes.position.array);
             
-            shaftMesh = new THREE.Mesh(shaftGeo, steelMat);
-            // Center positioned exactly between motor coupling face (-8.5) and encoder coupling face (10.75)
-            shaftMesh.position.set(1.125, yCenter, 0); 
+            shaftMesh = new THREE.Mesh(shaftGeo, flexSteelMat);
+            // Center positioned exactly between motor coupling (-8.4) and encoder coupling (11.5) -> (11.5 + -8.4)/2 = 1.55
+            shaftMesh.position.set(1.55, yCenter, 0); 
             shaftMesh.castShadow = true;
             scene.add(shaftMesh);
             
@@ -402,7 +729,7 @@
             requestAnimationFrame(animate);
             
             const dt = clock.getDelta();
-            const sim_dt = dt * 0.1; 
+            const sim_dt = dt * 0.1; // 10x Slow-Mo for visual clarity at high RPM
 
             // 1. Torsional Resonance Physics
             const dampingRatio = 0.04;
@@ -416,7 +743,7 @@
             }
             currentTwistAmplitude = THREE.MathUtils.lerp(currentTwistAmplitude, Math.min(targetTwistAmplitude, MAX_TWIST_RAD), 0.1);
 
-            // 2. Calculate True Kinematics 
+            // 2. Kinematics 
             const trueAngularVelocity = (currentRpm * Math.PI * 2) / 60; 
             motorAngle = (motorAngle + trueAngularVelocity * sim_dt) % (Math.PI * 2);
             
@@ -426,7 +753,7 @@
             const twistPhaseLag = currentTwistAmplitude * Math.sin(excitationPhase);
             const flywheelAngle = (motorAngle - twistPhaseLag) % (Math.PI * 2);
 
-            // 3. Deform Shaft Geometry (The Twist Effect)
+            // 3. Deform Shaft Geometry
             const positions = shaftMesh.geometry.attributes.position.array;
             const originals = shaftMesh.geometry.userData.originalPositions;
             
@@ -435,9 +762,9 @@
                 let oy = originals[i+1];
                 let oz = originals[i+2];
 
-                // Map shaft vertex to absolute world coordinates (-8.5 to 10.75)
-                let absoluteX = ox + 1.125;
-                let t = (absoluteX + 8.5) / 19.25; 
+                // Absolute X spanning -8.4 to 11.5. Center is 1.55, length is 19.25
+                let absoluteX = ox + 1.55;
+                let t = (absoluteX + 8.4) / 19.25; 
                 t = Math.max(0, Math.min(1, t));
 
                 let interpolatedAngle = motorAngle - (twistPhaseLag * t);
@@ -450,14 +777,13 @@
             shaftMesh.geometry.attributes.position.needsUpdate = true;
             shaftMesh.geometry.computeVertexNormals(); 
 
-            // 4. Update Rigid Components
-            if (motorMesh) motorMesh.rotation.x = motorAngle;
+            // 4. Rigid Component Sync
             if (motorShaftMesh) motorShaftMesh.rotation.x = motorAngle;
             if (couplingMesh) couplingMesh.rotation.x = motorAngle;
             if (massMesh) massMesh.rotation.x = flywheelAngle;
             if (encoderCouplingMesh) encoderCouplingMesh.rotation.x = flywheelAngle;
 
-            // 5. Update UI Dashboard 
+            // 5. Telemetry
             const twistDegrees = (twistPhaseLag * (180 / Math.PI)).toFixed(2);
             const angularJitter = (currentTwistAmplitude * excitationFreq * Math.cos(excitationPhase)).toFixed(2);
 
@@ -470,12 +796,15 @@
             } else if (currentRpm > CRITICAL_SPEED - 80 && currentRpm < CRITICAL_SPEED + 80) {
                 stateDisplay.innerText = 'TORSIONAL RESONANCE';
                 stateDisplay.style.color = '#ef4444';
+                stateDisplay.style.textShadow = '0 0 8px rgba(239,68,68,0.5)';
             } else if (currentRpm >= CRITICAL_SPEED + 80) {
                 stateDisplay.innerText = 'Supercritical (Shear stabilized)';
-                stateDisplay.style.color = '#4ade80';
+                stateDisplay.style.color = '#38bdf8';
+                stateDisplay.style.textShadow = 'none';
             } else {
                 stateDisplay.innerText = 'Subcritical';
                 stateDisplay.style.color = '#facc15';
+                stateDisplay.style.textShadow = 'none';
             }
 
             controls.update();
